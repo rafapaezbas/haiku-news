@@ -10,12 +10,35 @@ const { loadModel, completion, unloadModel } = plugins([llmPlugin])
 const modelId = await loadModel({
   modelSrc: LLAMA_3_2_1B_INST_Q4_0,
   modelType: 'llm',
-  onProgress: (progress) => {
-    //console.log(progress)
-  }
+  onProgress: ({ percentage }) => printProgress(percentage)
 })
 
-const news = await topItems(10)
+const phrases = [
+  'Composing haikus',
+  'Counting syllables',
+  'Consulting the muse',
+  'Distilling headlines into verse',
+  'Arranging seventeen syllables',
+  'Meditating on the news',
+  'Sharpening the digital brush',
+  'Whispering to the model',
+  'Folding words like origami',
+  'Brewing poetic tea',
+  'Watching cherry blossoms fall',
+  'Contemplating the void (and HN)',
+  'Summoning inner Bashō',
+  'Herding syllables into lines',
+  'Waiting for inspiration to strike',
+  'Polishing tiny poems',
+  'Translating tech into zen',
+  'Listening to the mountain stream',
+  'Pondering impermanence of startups',
+  'Letting the tokens flow'
+]
+
+console.log(`${phrases[Math.floor(Math.random() * phrases.length)]}...`)
+
+const news = await topItems(5)
 
 const result = await Promise.all(
   news.map(async (e) => {
@@ -53,6 +76,17 @@ async function topItems(n) {
       return response.json()
     })
   )
+}
+
+function printProgress(percentage) {
+  const width = 40
+  const filled = Math.round((percentage / 100) * width)
+  const bar = '█'.repeat(filled) + '░'.repeat(width - filled)
+  if (percentage > 99) {
+    process.stdout.write(`\r`)
+    return
+  }
+  process.stdout.write(`\rDownloading model  ${bar} ${percentage.toFixed(0).padStart(3)}%`)
 }
 
 function printHaikus(results) {
