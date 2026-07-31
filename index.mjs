@@ -1,10 +1,38 @@
+import Corestore from 'corestore'
+import Hyperswarm from 'Hyperswarm'
 import bareProcess from 'bare-process'
+import os from 'bare-os'
+import path from 'bare-path'
+import PearRuntimeUpdater from 'pear-runtime-updater'
+import pkg from './package.json'
 import { plugins, LLAMA_3_2_1B_INST_Q4_0 } from '@qvac/sdk'
 import { llmPlugin } from '@qvac/sdk/llamacpp-completion/plugin'
 import https from 'bare-https'
 import fetch from 'bare-fetch'
+import { isWindows, isLinux } from 'which-runtime'
 
 global.process = bareProcess
+
+const store = new Corestore(path.join(storage(), 'pear-runtime/corestore'))
+const swarm = new Hyperswarm()
+
+swarm.on('connection', (c) => {
+  store.replicate(c)
+})
+
+const updater = new PearRuntimeUpdater({
+  dir: storage(),
+  store,
+  version: pkg.version,
+  app: os.execPath(),
+  name: pkg.name,
+  upgrade: pkg.upgrade
+})
+
+await store.ready()
+await updater.ready()
+swarm.join(updater.drive.core.discoveryKey)
+
 const { loadModel, completion, unloadModel } = plugins([llmPlugin])
 
 const modelId = await loadModel({
@@ -116,4 +144,10 @@ Top Hacker News stories, distilled to 17 syllables
     console.log('')
   })
   console.log()
+}
+
+function storage() {
+  if (isWindows) return path.join(os.homedir(), 'AppData', 'Roaming', 'haiku-news')
+  if (isLinux) return path.join(os.homedir(), '.config', 'haiku-news')
+  return path.join(os.homedir(), 'Library', 'Application Support', 'haiku-news')
 }

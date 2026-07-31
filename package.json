@@ -2,6 +2,7 @@
   "name": "haiku-news",
   "bin": "haiku-news",
   "version": "1.0.0",
+  "upgrade": "pear://n848ydyj6escctzngf8spq4o6hs78c7ku95bogbmq9amhxptzz4y",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -16,7 +17,11 @@
   "type": "commonjs",
   "dependencies": {
     "@qvac/bare-sdk": "^0.16.0",
-    "@qvac/sdk": "^0.16.0"
+    "@qvac/sdk": "^0.16.0",
+    "corestore": "^7.12.0",
+    "hyperswarm": "^4.17.0",
+    "pear-runtime-updater": "^3.3.0",
+    "which-runtime": "^1.4.0"
   },
   "devDependencies": {
     "bare-build": "^1.0.4",
