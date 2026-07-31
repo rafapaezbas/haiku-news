@@ -1,0 +1,26 @@
+{
+  "name": "haiku-news",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write . && lunte --fix .",
+    "lint": "prettier --check . && lunte",
+    "make": "node scripts/make.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@qvac/bare-sdk": "^0.16.0",
+    "@qvac/sdk": "^0.16.0"
+  },
+  "devDependencies": {
+    "bare-build": "^1.0.4",
+    "lunte": "^1.8.4",
+    "prettier": "^3.9.6",
+    "prettier-config-holepunch": "^2.0.0"
+  }
+}
