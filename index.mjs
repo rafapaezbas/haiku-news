@@ -1,5 +1,5 @@
 import Corestore from 'corestore'
-import Hyperswarm from 'Hyperswarm'
+import Hyperswarm from 'hyperswarm'
 import bareProcess from 'bare-process'
 import os from 'bare-os'
 import path from 'bare-path'
