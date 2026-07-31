@@ -1,0 +1,210 @@
+name: Build Haiku-news
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-linux-arm:
+        type: boolean
+        default: false
+      run-linux-x64:
+        type: boolean
+        default: false
+      run-macos:
+        type: boolean
+        default: false
+      run-macos-intel:
+        type: boolean
+        default: false
+      run-windows:
+        type: boolean
+        default: false
+      run-stage:
+        type: boolean
+        default: false
+      stage-dry-run:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build-linux-x64:
+    if: ${{ inputs.run-linux-x64 }}
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-latest
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      artifact-links: ${{ steps.build.outputs.artifact-links }}
+    steps:
+      - name: Setup bare
+        uses: holepunchto/actions/bare-base@v1
+
+      - name: Checkout haiku-news
+        uses: actions/checkout@v4
+
+      - name: Build linux x64
+        id: build
+        uses: holepunchto/actions/make-pear-app@v1
+        with:
+          channel: haiku-news
+          standalone_artifact_name: haiku-news-linux-x64
+          standalone: haiku-news
+
+  build-linux-arm:
+    if: ${{ inputs.run-linux-arm }}
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-24.04-arm
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      artifact-links: ${{ steps.build.outputs.artifact-links }}
+    steps:
+      - name: Setup bare
+        uses: holepunchto/actions/bare-base@v1
+
+      - name: Checkout haiku-news
+        uses: actions/checkout@v4
+
+      - name: Build linux arm
+        id: build
+        uses: holepunchto/actions/make-pear-app@v1
+        with:
+          channel: haiku-news
+          standalone_artifact_name: haiku-news-linux-arm64
+          standalone: haiku-news
+
+  build-macos:
+    if: ${{ inputs.run-macos }}
+    permissions:
+      contents: read
+      packages: read
+    runs-on: macos-latest
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      artifact-links: ${{ steps.build.outputs.artifact-links }}
+    steps:
+      - name: Setup bare
+        uses: holepunchto/actions/bare-base@v1
+
+      - name: Checkout haiku-news
+        uses: actions/checkout@v4
+
+      - name: Build macos
+        id: build
+        uses: holepunchto/actions/make-pear-app@v1
+        with:
+          channel: haiku-news
+          standalone_artifact_name: haiku-news-darwin-arm64
+          standalone: haiku-news
+          macos_certificate_base64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          macos_p12_password: ${{ secrets.MACOS_P12_PASSWORD }}
+          macos_codesign_identity: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          macos_notarization_method: apple_id_password
+          macos_apple_id: ${{ secrets.MACOS_APPLE_ID }}
+          macos_apple_password: ${{ secrets.MACOS_APPLE_PASSWORD }}
+          macos_apple_team_id: ${{ secrets.MACOS_APPLE_TEAM_ID }}
+
+  build-macos-x64:
+    if: ${{ inputs.run-macos-intel }}
+    permissions:
+      contents: read
+      packages: read
+    runs-on: macos-26-intel
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      artifact-links: ${{ steps.build.outputs.artifact-links }}
+    steps:
+      - name: Setup bare
+        uses: holepunchto/actions/bare-base@v1
+
+      - name: Checkout haiku-news
+        uses: actions/checkout@v4
+
+      - name: Build macos x64
+        id: build
+        uses: holepunchto/actions/make-pear-app@v1
+        with:
+          channel: haiku-news
+          standalone_artifact_name: haiku-news-darwin-x64
+          standalone: haiku-news
+          macos_certificate_base64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          macos_p12_password: ${{ secrets.MACOS_P12_PASSWORD }}
+          macos_codesign_identity: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          macos_notarization_method: apple_id_password
+          macos_apple_id: ${{ secrets.MACOS_APPLE_ID }}
+          macos_apple_password: ${{ secrets.MACOS_APPLE_PASSWORD }}
+          macos_apple_team_id: ${{ secrets.MACOS_APPLE_TEAM_ID }}
+
+  build-win32:
+    if: ${{ inputs.run-windows }}
+    permissions:
+      contents: read
+      packages: read
+    runs-on: windows-latest
+    environment: release
+    timeout-minutes: 30
+    outputs:
+      artifact-links: ${{ steps.build.outputs.artifact-links }}
+    steps:
+      - name: Checkout haiku-news
+        uses: actions/checkout@v4
+
+      - name: Build windows
+        id: build
+        uses: holepunchto/actions/make-pear-app@v1
+        with:
+          channel: haiku-news
+          standalone_artifact_name: haiku-news-win32-x64
+          standalone: haiku-news.exe
+
+  stage:
+    needs: [build-linux-x64, build-linux-arm, build-macos, build-macos-x64, build-win32]
+    if: >-
+      ${{ always()
+        && !cancelled()
+        && inputs.run-stage
+        && needs.build-linux-x64.result == 'success'
+        && (!inputs.run-linux-arm || needs.build-linux-arm.result == 'success')
+        && (!inputs.run-macos || needs.build-macos.result == 'success')
+        && (!inputs.run-macos-intel || needs.build-macos-x64.result == 'success')
+        && (!inputs.run-windows || needs.build-win32.result == 'success') }}
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: read
+      actions: read
+    runs-on: macos-latest
+    environment: release
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: out/artifacts
+
+      - name: Build stage artifact
+        env:
+          PACKAGE_JSON_PATH: package.json
+        run: ./scripts/build-stage-artifact.sh out/artifacts out/haiku-news-stage
+
+      - name: Stage with pear-ci
+        id: pear-ci
+        uses: holepunchto/actions/pear-ci@3ff649db70c90ceb33f6fb3f4132e74f0a97f3a7
+        with:
+          namespace: haiku-news
+          primary-key: ${{ secrets.PEAR_PRIMARY_KEY }}
+          target: ./out/haiku-news-stage
+          dry-run: ${{ inputs.stage-dry-run }}
+          github-token: ${{ steps.build_app_token.conclusion == 'success' && steps.build_app_token.outputs.token || github.token }}
