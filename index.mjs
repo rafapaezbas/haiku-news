@@ -33,6 +33,8 @@ await store.ready()
 await updater.ready()
 swarm.join(updater.drive.core.discoveryKey)
 
+updater.on('updated', async () => await updater.applyUpdate())
+
 const { loadModel, completion, unloadModel } = plugins([llmPlugin])
 
 const modelId = await loadModel({
