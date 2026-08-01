@@ -1,7 +1,7 @@
 {
   "name": "haiku-news",
   "bin": "haiku-news",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "upgrade": "pear://n848ydyj6escctzngf8spq4o6hs78c7ku95bogbmq9amhxptzz4y",
   "description": "",
   "main": "index.js",
